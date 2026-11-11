@@ -1,10 +1,10 @@
 # Maple Roulette
 
-A single-page roulette wheel that picks a random MapleStory class.
+A single-page gacha-style capsule machine that picks a random MapleStory class.
 
-- Spin the wheel (or press Space) to roll a class.
+- Press PULL (or Space) to open a capsule and reveal a class.
 - Filter by class group (Explorer, Cygnus Knights, ...) and job type.
-- Optional "no repeats" mode and a spin history, saved in your browser.
+- Optional "no repeats" mode and a pull history, saved in your browser.
 
 It is one static file, `index.html`, with no build step. To edit the class list, change the `CLASSES` array near the top of the script.
 

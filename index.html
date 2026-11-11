@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Maple Roulette — Random MapleStory Class Picker</title>
-<meta name="description" content="Spin the wheel to pick a random MapleStory class.">
+<meta name="description" content="Pull a capsule to get a random MapleStory class.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍁</text></svg>">
 <style>
   :root {
@@ -28,42 +28,119 @@
   }
   @media (max-width: 860px) { main { grid-template-columns: minmax(0, 1fr); } }
 
-  .stage { display: flex; flex-direction: column; align-items: center; gap: 18px; }
-  .wheel-wrap { position: relative; width: min(100%, 560px); aspect-ratio: 1; }
-  #wheel {
-    width: 100%; height: 100%; border-radius: 50%; display: block;
-    box-shadow: 0 0 0 6px var(--panel-2), 0 0 0 8px var(--accent), 0 20px 60px #0009;
-    transition: transform 5.5s cubic-bezier(.12, .7, .1, 1);
-  }
-  .pointer {
-    position: absolute; top: -14px; left: 50%; transform: translateX(-50%); z-index: 2;
-    width: 0; height: 0; border-left: 16px solid transparent; border-right: 16px solid transparent;
-    border-top: 34px solid var(--accent-2); filter: drop-shadow(0 3px 4px #000a);
-  }
-  .hub {
-    position: absolute; inset: 0; margin: auto; width: 22%; height: 22%; border-radius: 50%;
-    border: 4px solid var(--accent-2); background: linear-gradient(160deg, var(--accent), #d9560b);
-    color: #fff; font-weight: 800; font-size: clamp(1rem, 3.4vw, 1.4rem); letter-spacing: .06em;
-    cursor: pointer; box-shadow: 0 6px 20px #0008; z-index: 2;
-  }
-  .hub:hover:not(:disabled) { filter: brightness(1.1); }
-  .hub:disabled { cursor: not-allowed; filter: grayscale(.6); }
-  .hub:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+  .stage { display: flex; flex-direction: column; align-items: center; gap: 16px; }
 
-  .result {
-    width: min(100%, 560px); min-height: 104px; text-align: center;
-    background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px;
+  /* ---------- gacha machine ---------- */
+  .gacha {
+    --c: var(--accent);
+    position: relative; width: min(100%, 560px); height: clamp(380px, 62vh, 500px);
+    border-radius: 20px; overflow: hidden; border: 1px solid var(--line);
+    background:
+      radial-gradient(circle at 50% 108%, color-mix(in srgb, var(--c) 28%, transparent), transparent 55%),
+      radial-gradient(1px 1px at 12% 22%, #fff9, transparent), radial-gradient(1px 1px at 78% 14%, #fff8, transparent),
+      radial-gradient(2px 2px at 88% 62%, #fff5, transparent), radial-gradient(1px 1px at 30% 70%, #fff7, transparent),
+      radial-gradient(2px 2px at 60% 34%, #fff4, transparent), radial-gradient(1px 1px at 8% 86%, #fff6, transparent),
+      linear-gradient(#1b1730, #0f0d18);
+    transition: --c .4s;
+    display: grid; place-items: center;
   }
-  .result .label { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .12em; }
-  .result .name { font-size: clamp(1.6rem, 6vw, 2.3rem); font-weight: 800; line-height: 1.2; }
-  .result .meta { color: var(--muted); }
-  .result.pop .name { animation: pop .5s ease; }
-  @keyframes pop { 0% { transform: scale(.6); opacity: 0; } 70% { transform: scale(1.08); } 100% { transform: scale(1); opacity: 1; } }
+  .gacha > * { grid-area: 1 / 1; }
 
+  .glow {
+    position: absolute; left: 50%; top: 50%; margin: -150px 0 0 -150px;
+    width: 300px; height: 300px; border-radius: 50%; opacity: 0; pointer-events: none;
+    background: radial-gradient(circle, var(--c), transparent 65%);
+  }
+  .rays {
+    position: absolute; left: 50%; top: 50%; margin: -450px 0 0 -450px;
+    width: 900px; height: 900px; border-radius: 50%; opacity: 0; pointer-events: none;
+    background: repeating-conic-gradient(color-mix(in srgb, var(--c) 55%, transparent) 0 9deg, transparent 9deg 24deg);
+    -webkit-mask: radial-gradient(circle, #000 5%, transparent 58%); mask: radial-gradient(circle, #000 5%, transparent 58%);
+  }
+  .flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 4; }
+
+  .capsule { position: relative; width: 150px; height: 150px; z-index: 2; filter: drop-shadow(0 14px 18px #000a); }
+  .cap-half { position: absolute; left: 0; width: 150px; height: 75px; }
+  .cap-top {
+    top: 0; border-radius: 75px 75px 0 0; border-bottom: 5px solid #2a2233;
+    background: radial-gradient(circle at 32% 38%, #fff8 0 9%, transparent 22%), linear-gradient(160deg, #ffb057, #e0570a);
+  }
+  .cap-bot {
+    bottom: 0; border-radius: 0 0 75px 75px; border-top: 5px solid #2a2233;
+    background: linear-gradient(170deg, #f6f3fb, #b9b3c9);
+  }
+  .hint { position: absolute; left: 0; right: 0; bottom: 26px; color: var(--muted); font-size: .9rem; z-index: 2; text-align: center; padding: 0 16px; }
+
+  .card {
+    width: 230px; min-height: 300px; z-index: 3; padding: 18px 14px; text-align: center;
+    border-radius: 16px; border: 3px solid var(--c);
+    background: linear-gradient(170deg, color-mix(in srgb, var(--c) 30%, #1f1c2b), #1f1c2b 60%);
+    box-shadow: 0 0 40px color-mix(in srgb, var(--c) 60%, transparent), 0 18px 40px #000b;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    opacity: 0; transform: perspective(700px) rotateY(90deg) scale(.5);
+  }
+  .card .icon { font-size: 3.6rem; line-height: 1.1; }
+  .card .name { font-size: 1.55rem; font-weight: 800; line-height: 1.2; text-wrap: balance; }
+  .card .group { color: var(--c); font-weight: 700; text-transform: uppercase; letter-spacing: .1em; font-size: .8rem; filter: brightness(1.3); }
+  .card .type { color: var(--muted); font-size: .9rem; }
+  .card .stars { color: var(--accent-2); letter-spacing: .25em; font-size: .9rem; }
+
+  .spark {
+    position: absolute; left: 50%; top: 50%; margin: -4px;
+    width: 8px; height: 8px; border-radius: 50%; background: #fff; z-index: 3; pointer-events: none;
+    box-shadow: 0 0 8px 2px var(--c); animation: fly .9s ease-out forwards;
+  }
+
+  /* phases */
+  .gacha[data-phase="idle"] .capsule { animation: float 2.6s ease-in-out infinite; }
+  .gacha[data-phase="charge"] .capsule { animation: shake 1.7s ease-in forwards; }
+  .gacha[data-phase="charge"] .glow { animation: charge 1.7s ease-in forwards; }
+  .gacha[data-phase="charge"] .hint, .gacha[data-phase="burst"] .hint, .gacha[data-phase="reveal"] .hint { visibility: hidden; }
+  .gacha[data-phase="burst"] .glow { opacity: 1; transform: scale(2); }
+  .gacha[data-phase="burst"] .cap-top { animation: splitUp .45s ease-out forwards; }
+  .gacha[data-phase="burst"] .cap-bot { animation: splitDown .45s ease-out forwards; }
+  .gacha[data-phase="burst"] .flash { animation: flash .45s ease-in forwards; }
+  .gacha[data-phase="reveal"] .capsule { display: none; }
+  .gacha[data-phase="reveal"] .flash { animation: flashOut .6s ease-out forwards; }
+  .gacha[data-phase="reveal"] .rays { opacity: .9; animation: spin 14s linear infinite; }
+  .gacha[data-phase="reveal"] .card { animation: cardIn .7s cubic-bezier(.2, 1.3, .4, 1) forwards; }
+  .gacha:not([data-phase="reveal"]) .card { visibility: hidden; }
+
+  @keyframes float { 50% { transform: translateY(-12px) rotate(-3deg); } }
+  @keyframes shake {
+    0%, 100% { transform: rotate(0); }
+    8% { transform: rotate(-6deg); } 16% { transform: rotate(6deg); } 24% { transform: rotate(-8deg); } 32% { transform: rotate(8deg); }
+    40% { transform: rotate(-11deg) scale(1.03); } 48% { transform: rotate(11deg) scale(1.03); }
+    56% { transform: rotate(-14deg) scale(1.06); } 64% { transform: rotate(14deg) scale(1.06); }
+    72% { transform: rotate(-17deg) scale(1.1); } 80% { transform: rotate(17deg) scale(1.1); }
+    88% { transform: rotate(-20deg) scale(1.14); } 96% { transform: rotate(20deg) scale(1.16); }
+  }
+  @keyframes charge { 0% { opacity: 0; transform: scale(.4); } 55% { opacity: .35; transform: scale(.8); } 100% { opacity: 1; transform: scale(1.5); } }
+  @keyframes splitUp { to { transform: translateY(-150px) rotate(-35deg); opacity: 0; } }
+  @keyframes splitDown { to { transform: translateY(150px) rotate(25deg); opacity: 0; } }
+  @keyframes flash { to { opacity: 1; } }
+  @keyframes flashOut { from { opacity: 1; } to { opacity: 0; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes cardIn { to { opacity: 1; transform: perspective(700px) rotateY(0) scale(1); } }
+  @keyframes fly { from { opacity: 1; transform: translate(0, 0) scale(1); } to { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(.2); } }
+
+  .pull {
+    padding: 14px 44px; border-radius: 999px; border: 3px solid var(--accent-2);
+    background: linear-gradient(160deg, var(--accent), #d9560b); color: #fff;
+    font: inherit; font-weight: 800; font-size: 1.2rem; letter-spacing: .08em; cursor: pointer;
+    box-shadow: 0 6px 20px #0008;
+  }
+  .pull:hover:not(:disabled) { filter: brightness(1.1); }
+  .pull:active:not(:disabled) { transform: translateY(2px); }
+  .pull:disabled { cursor: not-allowed; filter: grayscale(.6); opacity: .7; }
+  button:focus-visible, input:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+  #status { color: var(--muted); font-size: .9rem; min-height: 1.4em; text-align: center; }
+
+  /* ---------- side panel ---------- */
   aside { display: flex; flex-direction: column; gap: 16px; }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
-  .card h2 { margin: 0 0 10px; font-size: .85rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
-  .card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+  .panel h2 { margin: 0 0 10px; font-size: .85rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+  .panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
   .chip {
     display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px;
@@ -83,45 +160,58 @@
   .empty { color: var(--muted); font-size: .9rem; }
   footer { text-align: center; color: var(--muted); font-size: .8rem; padding: 20px 16px 32px; }
   footer a { color: var(--accent-2); }
-  @media (prefers-reduced-motion: reduce) { #wheel { transition-duration: .01s; } .result.pop .name { animation: none; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .gacha *, .gacha { animation-duration: .01s !important; animation-iteration-count: 1 !important; }
+    .spark { display: none; }
+  }
 </style>
 </head>
 <body>
 <header>
   <h1>🍁 Maple <span>Roulette</span></h1>
-  <p>Can't decide what to play? Spin the wheel and let fate pick your next MapleStory class.</p>
+  <p>Can't decide what to play? Pull a capsule and let fate pick your next MapleStory class.</p>
 </header>
 
 <main>
   <section class="stage">
-    <div class="wheel-wrap">
-      <div class="pointer" aria-hidden="true"></div>
-      <canvas id="wheel" role="img" aria-label="Roulette wheel of MapleStory classes"></canvas>
-      <button class="hub" id="spin">SPIN</button>
+    <div class="gacha" id="gacha" data-phase="idle">
+      <div class="rays" aria-hidden="true"></div>
+      <div class="glow" aria-hidden="true"></div>
+      <div class="capsule" aria-hidden="true">
+        <div class="cap-half cap-top"></div>
+        <div class="cap-half cap-bot"></div>
+      </div>
+      <div class="hint">Press PULL (or hit Space) to open a capsule</div>
+      <div class="card" id="card" aria-live="polite">
+        <div class="stars" aria-hidden="true">★★★★★</div>
+        <div class="icon" id="resIcon" aria-hidden="true"></div>
+        <div class="name" id="resName"></div>
+        <div class="group" id="resGroup"></div>
+        <div class="type" id="resType"></div>
+      </div>
+      <div class="flash" aria-hidden="true"></div>
     </div>
-    <div class="result" id="result" aria-live="polite">
-      <div class="label">Your class</div>
-      <div class="name" id="resName">?</div>
-      <div class="meta" id="resMeta">Press SPIN (or hit Space) to roll</div>
-    </div>
+    <button class="pull" id="pull">PULL</button>
+    <div id="status" aria-live="polite"></div>
   </section>
 
   <aside>
-    <div class="card">
-      <div class="card-head"><h2>Class groups</h2><button class="link" data-all="group">toggle all</button></div>
+    <div class="panel">
+      <div class="panel-head"><h2>Class groups</h2><button class="link" data-all="group">toggle all</button></div>
       <div class="chips" id="groups"></div>
     </div>
-    <div class="card">
-      <div class="card-head"><h2>Job types</h2><button class="link" data-all="type">toggle all</button></div>
+    <div class="panel">
+      <div class="panel-head"><h2>Job types</h2><button class="link" data-all="type">toggle all</button></div>
       <div class="chips" id="types"></div>
       <div id="count"></div>
     </div>
-    <div class="card">
+    <div class="panel">
       <h2>Options</h2>
-      <label class="opt"><input type="checkbox" id="noRepeat"> Don't repeat classes already rolled</label>
+      <label class="opt"><input type="checkbox" id="noRepeat"> Don't repeat classes already pulled</label>
     </div>
-    <div class="card">
-      <div class="card-head"><h2>History</h2><button class="link" id="clear">clear</button></div>
+    <div class="panel">
+      <div class="panel-head"><h2>History</h2><button class="link" id="clear">clear</button></div>
       <ul id="history"></ul>
     </div>
   </aside>
@@ -161,17 +251,19 @@ const GROUP_COLORS = {
   "Nova": "#d65a9c", "Flora": "#3fae8a", "Anima": "#5aa83c", "Sengoku": "#b8873a",
   "Jianghu": "#3aa7b8", "Shine": "#c9a92e", "Other": "#7c8296",
 };
-const TYPES = ["Warrior", "Magician", "Bowman", "Thief", "Pirate"];
+const TYPE_ICONS = { Warrior: "⚔️", Magician: "🔮", Bowman: "🏹", Thief: "🗡️", Pirate: "⚓" };
+const TYPES = Object.keys(TYPE_ICONS);
 const KEY = "maple-roulette-v1";
+const CHARGE_MS = 1700, BURST_MS = 450;
 
 const $ = id => document.getElementById(id);
-const canvas = $("wheel"), ctx = canvas.getContext("2d"), spinBtn = $("spin");
+const gacha = $("gacha"), pullBtn = $("pull");
 
 let state = { groups: {}, types: {}, noRepeat: false, history: [] };
 try { Object.assign(state, JSON.parse(localStorage.getItem(KEY)) || {}); } catch {}
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} };
 
-let pool = [], rotation = 0, spinning = false;
+let pool = [], busy = false;
 
 const on = (map, k) => map[k] !== false;
 function computePool() {
@@ -180,51 +272,14 @@ function computePool() {
     on(state.groups, c.group) && c.type.split(" / ").some(t => on(state.types, t)) && !used.has(c.name));
 }
 
-function drawWheel() {
-  const size = canvas.clientWidth, dpr = window.devicePixelRatio || 1;
-  canvas.width = canvas.height = Math.round(size * dpr);
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const r = size / 2, n = pool.length;
-  ctx.clearRect(0, 0, size, size);
-  if (!n) {
-    ctx.fillStyle = "#2a2639"; ctx.beginPath(); ctx.arc(r, r, r, 0, Math.PI * 2); ctx.fill();
-    return;
-  }
-  const seg = Math.PI * 2 / n;
-  const fontPx = Math.max(8, Math.min(16, (seg * r * 0.8) * 0.75, size / 34));
-  ctx.font = `600 ${fontPx}px system-ui, sans-serif`;
-  ctx.textBaseline = "middle"; ctx.textAlign = "right";
-  pool.forEach((c, i) => {
-    const a0 = -Math.PI / 2 + i * seg;
-    ctx.beginPath(); ctx.moveTo(r, r); ctx.arc(r, r, r, a0, a0 + seg); ctx.closePath();
-    ctx.fillStyle = GROUP_COLORS[c.group];
-    ctx.globalAlpha = i % 2 ? 0.82 : 1; ctx.fill(); ctx.globalAlpha = 1;
-    ctx.strokeStyle = "#14121c"; ctx.lineWidth = 1; ctx.stroke();
-    ctx.save();
-    ctx.translate(r, r); ctx.rotate(a0 + seg / 2);
-    ctx.fillStyle = "#fff"; ctx.shadowColor = "#000b"; ctx.shadowBlur = 3;
-    let label = c.name.replace("Arch Mage ", "").replace(/[()]/g, "");
-    const maxW = r * 0.62;
-    while (ctx.measureText(label).width > maxW && label.length > 4) label = label.slice(0, -2) + "…";
-    ctx.fillText(label, r - 10, 0);
-    ctx.restore();
-  });
-}
-
 function refresh() {
   pool = computePool();
-  canvas.style.transition = "none";
-  rotation = 0; canvas.style.transform = "rotate(0deg)";
-  drawWheel();
-  void canvas.offsetWidth; canvas.style.transition = "";
-  $("count").textContent = `${pool.length} of ${CLASSES.length} classes on the wheel`;
-  spinBtn.disabled = spinning || pool.length === 0;
-  if (!pool.length && !spinning) {
-    $("resName").textContent = "—";
-    $("resMeta").textContent = state.noRepeat && state.history.length
-      ? "Every matching class has been rolled — clear the history to start over."
+  $("count").textContent = `${pool.length} of ${CLASSES.length} classes in the machine`;
+  pullBtn.disabled = busy || pool.length === 0;
+  $("status").textContent = pool.length ? ""
+    : state.noRepeat && state.history.length
+      ? "Every matching class has been pulled — clear the history to start over."
       : "No classes match the current filters.";
-  }
 }
 
 function randInt(n) {
@@ -232,37 +287,51 @@ function randInt(n) {
   do crypto.getRandomValues(buf); while (buf[0] >= limit);
   return buf[0] % n;
 }
+const wait = ms => new Promise(r => setTimeout(r, ms));
+function setPhase(p) { gacha.dataset.phase = p; void gacha.offsetWidth; }
 
-function spin() {
-  if (spinning || !pool.length) return;
-  spinning = true; spinBtn.disabled = true;
-  const i = randInt(pool.length), winner = pool[i], seg = 360 / pool.length;
-  const center = (i + 0.5) * seg, jitter = (Math.random() - 0.5) * seg * 0.7;
-  rotation = Math.ceil(rotation / 360) * 360 + 360 * 6 + (360 - center) + jitter;
-  $("result").classList.remove("pop");
-  $("resName").textContent = "…"; $("resMeta").textContent = "Spinning";
-  canvas.style.transform = `rotate(${rotation}deg)`;
+async function pull() {
+  if (busy || !pool.length) return;
+  busy = true; pullBtn.disabled = true;
+  const c = pool[randInt(pool.length)];
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  setTimeout(() => finish(winner), reduced ? 50 : 5600);
-}
+  gacha.querySelectorAll(".spark").forEach(s => s.remove());
 
-function finish(c) {
-  spinning = false;
+  setPhase("idle");
+  gacha.style.setProperty("--c", GROUP_COLORS[c.group]);
+  setPhase("charge"); await wait(reduced ? 0 : CHARGE_MS);
+  setPhase("burst"); await wait(reduced ? 0 : BURST_MS);
+
+  $("resIcon").textContent = c.type.split(" / ").map(t => TYPE_ICONS[t]).join("");
   $("resName").textContent = c.name;
-  $("resName").style.color = GROUP_COLORS[c.group];
-  $("resMeta").textContent = `${c.group} · ${c.type}`;
-  $("result").classList.add("pop");
+  $("resGroup").textContent = c.group;
+  $("resType").textContent = c.type;
+  setPhase("reveal");
+  if (!reduced) sparks();
+
   state.history.unshift({ name: c.name, group: c.group });
   state.history = state.history.slice(0, 100);
   save(); renderHistory();
-  if (state.noRepeat) setTimeout(() => { if (!spinning) refresh(); }, 1200);
-  else spinBtn.disabled = false;
+  await wait(reduced ? 0 : 500);
+  busy = false; pullBtn.textContent = "PULL AGAIN";
+  refresh();
+}
+
+function sparks() {
+  for (let i = 0; i < 18; i++) {
+    const s = document.createElement("span"), a = Math.random() * Math.PI * 2, d = 140 + Math.random() * 160;
+    s.className = "spark";
+    s.style.setProperty("--dx", `${Math.cos(a) * d}px`);
+    s.style.setProperty("--dy", `${Math.sin(a) * d}px`);
+    s.style.animationDelay = `${Math.random() * .25}s`;
+    gacha.append(s);
+  }
 }
 
 function renderHistory() {
   const ul = $("history");
   ul.innerHTML = "";
-  if (!state.history.length) { ul.innerHTML = '<li class="empty">No spins yet.</li>'; return; }
+  if (!state.history.length) { ul.innerHTML = '<li class="empty">No pulls yet.</li>'; return; }
   state.history.forEach((h, i) => {
     const li = document.createElement("li"), b = document.createElement("span"), s = document.createElement("small");
     b.textContent = `${state.history.length - i}. ${h.name}`; b.style.color = GROUP_COLORS[h.group];
@@ -276,7 +345,7 @@ function buildChips(container, keys, map, color) {
     b.className = "chip"; b.type = "button"; b.setAttribute("aria-pressed", on(map, k));
     if (color) { const d = document.createElement("span"); d.className = "dot"; d.style.background = color[k]; b.append(d); }
     b.append(k);
-    b.onclick = () => { if (spinning) return; map[k] = !on(map, k); b.setAttribute("aria-pressed", map[k]); save(); refresh(); };
+    b.onclick = () => { map[k] = !on(map, k); b.setAttribute("aria-pressed", map[k]); save(); refresh(); };
     container.append(b);
   });
 }
@@ -284,7 +353,6 @@ buildChips($("groups"), Object.keys(GROUP_COLORS), state.groups, GROUP_COLORS);
 buildChips($("types"), TYPES, state.types);
 
 document.querySelectorAll("[data-all]").forEach(btn => btn.onclick = () => {
-  if (spinning) return;
   const isGroup = btn.dataset.all === "group";
   const map = isGroup ? state.groups : state.types, keys = isGroup ? Object.keys(GROUP_COLORS) : TYPES;
   const allOn = keys.every(k => on(map, k));
@@ -294,13 +362,12 @@ document.querySelectorAll("[data-all]").forEach(btn => btn.onclick = () => {
 });
 
 $("noRepeat").checked = state.noRepeat;
-$("noRepeat").onchange = e => { state.noRepeat = e.target.checked; save(); if (!spinning) refresh(); };
-$("clear").onclick = () => { state.history = []; save(); renderHistory(); if (!spinning) refresh(); };
-spinBtn.onclick = spin;
+$("noRepeat").onchange = e => { state.noRepeat = e.target.checked; save(); refresh(); };
+$("clear").onclick = () => { state.history = []; save(); renderHistory(); refresh(); };
+pullBtn.onclick = pull;
 document.addEventListener("keydown", e => {
-  if (e.code === "Space" && !/^(BUTTON|INPUT|A)$/.test(document.activeElement.tagName)) { e.preventDefault(); spin(); }
+  if (e.code === "Space" && !/^(BUTTON|INPUT|A)$/.test(document.activeElement.tagName)) { e.preventDefault(); pull(); }
 });
-let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { if (!spinning) drawWheel(); }, 150); });
 
 renderHistory(); refresh();
 </script>
