@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maple Roulette — Random MapleStory Class Picker</title>
+<meta name="description" content="Spin the wheel to pick a random MapleStory class.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍁</text></svg>">
+<style>
+  :root {
+    --bg: #14121c; --panel: #1f1c2b; --panel-2: #2a2639; --line: #3a3550;
+    --text: #f3f0fa; --muted: #a59fba; --accent: #ff8a1f; --accent-2: #ffc24a;
+  }
+  * { box-sizing: border-box; }
+  html { overflow-x: clip; }
+  body {
+    margin: 0; background: radial-gradient(1200px 600px at 50% -10%, #2c2440, var(--bg)) fixed, var(--bg);
+    color: var(--text); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh; overflow-x: clip;
+  }
+  header { text-align: center; padding: 28px 16px 8px; }
+  h1 { margin: 0; font-size: clamp(1.7rem, 5vw, 2.6rem); letter-spacing: -.02em; }
+  h1 span { color: var(--accent); }
+  header p { margin: 6px 0 0; color: var(--muted); }
+  main {
+    max-width: 1080px; margin: 0 auto; padding: 16px;
+    display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; align-items: start;
+  }
+  @media (max-width: 860px) { main { grid-template-columns: minmax(0, 1fr); } }
+
+  .stage { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+  .wheel-wrap { position: relative; width: min(100%, 560px); aspect-ratio: 1; }
+  #wheel {
+    width: 100%; height: 100%; border-radius: 50%; display: block;
+    box-shadow: 0 0 0 6px var(--panel-2), 0 0 0 8px var(--accent), 0 20px 60px #0009;
+    transition: transform 5.5s cubic-bezier(.12, .7, .1, 1);
+  }
+  .pointer {
+    position: absolute; top: -14px; left: 50%; transform: translateX(-50%); z-index: 2;
+    width: 0; height: 0; border-left: 16px solid transparent; border-right: 16px solid transparent;
+    border-top: 34px solid var(--accent-2); filter: drop-shadow(0 3px 4px #000a);
+  }
+  .hub {
+    position: absolute; inset: 0; margin: auto; width: 22%; height: 22%; border-radius: 50%;
+    border: 4px solid var(--accent-2); background: linear-gradient(160deg, var(--accent), #d9560b);
+    color: #fff; font-weight: 800; font-size: clamp(1rem, 3.4vw, 1.4rem); letter-spacing: .06em;
+    cursor: pointer; box-shadow: 0 6px 20px #0008; z-index: 2;
+  }
+  .hub:hover:not(:disabled) { filter: brightness(1.1); }
+  .hub:disabled { cursor: not-allowed; filter: grayscale(.6); }
+  .hub:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+
+  .result {
+    width: min(100%, 560px); min-height: 104px; text-align: center;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px;
+  }
+  .result .label { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .12em; }
+  .result .name { font-size: clamp(1.6rem, 6vw, 2.3rem); font-weight: 800; line-height: 1.2; }
+  .result .meta { color: var(--muted); }
+  .result.pop .name { animation: pop .5s ease; }
+  @keyframes pop { 0% { transform: scale(.6); opacity: 0; } 70% { transform: scale(1.08); } 100% { transform: scale(1); opacity: 1; } }
+
+  aside { display: flex; flex-direction: column; gap: 16px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+  .card h2 { margin: 0 0 10px; font-size: .85rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+  .card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px;
+    background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
+    font: inherit; font-size: .85rem; cursor: pointer; user-select: none;
+  }
+  .chip[aria-pressed="false"] { opacity: .4; text-decoration: line-through; }
+  .chip .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .link { background: none; border: 0; color: var(--accent-2); font: inherit; font-size: .8rem; cursor: pointer; padding: 0; }
+  label.opt { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+  input[type=checkbox] { accent-color: var(--accent); width: 16px; height: 16px; }
+  #count { color: var(--muted); font-size: .85rem; margin-top: 8px; }
+  #history { list-style: none; margin: 0; padding: 0; max-height: 220px; overflow: auto; }
+  #history li { display: flex; justify-content: space-between; gap: 8px; padding: 5px 0; border-bottom: 1px dashed var(--line); }
+  #history li:last-child { border: 0; }
+  #history small { color: var(--muted); }
+  .empty { color: var(--muted); font-size: .9rem; }
+  footer { text-align: center; color: var(--muted); font-size: .8rem; padding: 20px 16px 32px; }
+  footer a { color: var(--accent-2); }
+  @media (prefers-reduced-motion: reduce) { #wheel { transition-duration: .01s; } .result.pop .name { animation: none; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>🍁 Maple <span>Roulette</span></h1>
+  <p>Can't decide what to play? Spin the wheel and let fate pick your next MapleStory class.</p>
+</header>
+
+<main>
+  <section class="stage">
+    <div class="wheel-wrap">
+      <div class="pointer" aria-hidden="true"></div>
+      <canvas id="wheel" role="img" aria-label="Roulette wheel of MapleStory classes"></canvas>
+      <button class="hub" id="spin">SPIN</button>
+    </div>
+    <div class="result" id="result" aria-live="polite">
+      <div class="label">Your class</div>
+      <div class="name" id="resName">?</div>
+      <div class="meta" id="resMeta">Press SPIN (or hit Space) to roll</div>
+    </div>
+  </section>
+
+  <aside>
+    <div class="card">
+      <div class="card-head"><h2>Class groups</h2><button class="link" data-all="group">toggle all</button></div>
+      <div class="chips" id="groups"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Job types</h2><button class="link" data-all="type">toggle all</button></div>
+      <div class="chips" id="types"></div>
+      <div id="count"></div>
+    </div>
+    <div class="card">
+      <h2>Options</h2>
+      <label class="opt"><input type="checkbox" id="noRepeat"> Don't repeat classes already rolled</label>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>History</h2><button class="link" id="clear">clear</button></div>
+      <ul id="history"></ul>
+    </div>
+  </aside>
+</main>
+
+<footer>
+  Fan-made tool, not affiliated with Nexon. Class list based on the official
+  <a href="https://www.nexon.com/maplestory/game/classes-and-jobs" target="_blank" rel="noopener">Classes &amp; Jobs</a> page.
+</footer>
+
+<script>
+// To add or remove a class, edit this list: [name, group, job type]
+const CLASSES = [
+  ["Hero","Explorer","Warrior"],["Paladin","Explorer","Warrior"],["Dark Knight","Explorer","Warrior"],
+  ["Arch Mage (Fire, Poison)","Explorer","Magician"],["Arch Mage (Ice, Lightning)","Explorer","Magician"],["Bishop","Explorer","Magician"],
+  ["Bowmaster","Explorer","Bowman"],["Marksman","Explorer","Bowman"],["Pathfinder","Explorer","Bowman"],
+  ["Night Lord","Explorer","Thief"],["Shadower","Explorer","Thief"],["Dual Blade","Explorer","Thief"],
+  ["Buccaneer","Explorer","Pirate"],["Corsair","Explorer","Pirate"],["Cannoneer","Explorer","Pirate"],
+  ["Dawn Warrior","Cygnus Knights","Warrior"],["Blaze Wizard","Cygnus Knights","Magician"],["Wind Archer","Cygnus Knights","Bowman"],
+  ["Night Walker","Cygnus Knights","Thief"],["Thunder Breaker","Cygnus Knights","Pirate"],["Mihile","Cygnus Knights","Warrior"],
+  ["Aran","Heroes","Warrior"],["Evan","Heroes","Magician"],["Mercedes","Heroes","Bowman"],
+  ["Phantom","Heroes","Thief"],["Luminous","Heroes","Magician"],["Shade","Heroes","Pirate"],
+  ["Battle Mage","Resistance","Magician"],["Wild Hunter","Resistance","Bowman"],["Mechanic","Resistance","Pirate"],
+  ["Blaster","Resistance","Warrior"],["Demon Slayer","Resistance","Warrior"],["Demon Avenger","Resistance","Warrior"],
+  ["Xenon","Resistance","Thief / Pirate"],
+  ["Kaiser","Nova","Warrior"],["Angelic Buster","Nova","Pirate"],["Cadena","Nova","Thief"],["Kain","Nova","Bowman"],
+  ["Adele","Flora","Warrior"],["Illium","Flora","Magician"],["Ark","Flora","Pirate"],["Khali","Flora","Thief"],
+  ["Hoyoung","Anima","Thief"],["Lara","Anima","Magician"],["Ren","Anima","Warrior"],
+  ["Hayato","Sengoku","Warrior"],["Kanna","Sengoku","Magician"],
+  ["Lynn","Jianghu","Magician"],["Mo Xuan","Jianghu","Pirate"],
+  ["Sia Astelle","Shine","Magician"],["Erel Light","Shine","Warrior"],
+  ["Zero","Other","Warrior"],["Kinesis","Other","Magician"],
+].map(([name, group, type]) => ({ name, group, type }));
+
+const GROUP_COLORS = {
+  "Explorer": "#e8843a", "Cygnus Knights": "#3f8fd6", "Heroes": "#8d5fd3", "Resistance": "#c94c4c",
+  "Nova": "#d65a9c", "Flora": "#3fae8a", "Anima": "#5aa83c", "Sengoku": "#b8873a",
+  "Jianghu": "#3aa7b8", "Shine": "#c9a92e", "Other": "#7c8296",
+};
+const TYPES = ["Warrior", "Magician", "Bowman", "Thief", "Pirate"];
+const KEY = "maple-roulette-v1";
+
+const $ = id => document.getElementById(id);
+const canvas = $("wheel"), ctx = canvas.getContext("2d"), spinBtn = $("spin");
+
+let state = { groups: {}, types: {}, noRepeat: false, history: [] };
+try { Object.assign(state, JSON.parse(localStorage.getItem(KEY)) || {}); } catch {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} };
+
+let pool = [], rotation = 0, spinning = false;
+
+const on = (map, k) => map[k] !== false;
+function computePool() {
+  const used = new Set(state.noRepeat ? state.history.map(h => h.name) : []);
+  return CLASSES.filter(c =>
+    on(state.groups, c.group) && c.type.split(" / ").some(t => on(state.types, t)) && !used.has(c.name));
+}
+
+function drawWheel() {
+  const size = canvas.clientWidth, dpr = window.devicePixelRatio || 1;
+  canvas.width = canvas.height = Math.round(size * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const r = size / 2, n = pool.length;
+  ctx.clearRect(0, 0, size, size);
+  if (!n) {
+    ctx.fillStyle = "#2a2639"; ctx.beginPath(); ctx.arc(r, r, r, 0, Math.PI * 2); ctx.fill();
+    return;
+  }
+  const seg = Math.PI * 2 / n;
+  const fontPx = Math.max(8, Math.min(16, (seg * r * 0.8) * 0.75, size / 34));
+  ctx.font = `600 ${fontPx}px system-ui, sans-serif`;
+  ctx.textBaseline = "middle"; ctx.textAlign = "right";
+  pool.forEach((c, i) => {
+    const a0 = -Math.PI / 2 + i * seg;
+    ctx.beginPath(); ctx.moveTo(r, r); ctx.arc(r, r, r, a0, a0 + seg); ctx.closePath();
+    ctx.fillStyle = GROUP_COLORS[c.group];
+    ctx.globalAlpha = i % 2 ? 0.82 : 1; ctx.fill(); ctx.globalAlpha = 1;
+    ctx.strokeStyle = "#14121c"; ctx.lineWidth = 1; ctx.stroke();
+    ctx.save();
+    ctx.translate(r, r); ctx.rotate(a0 + seg / 2);
+    ctx.fillStyle = "#fff"; ctx.shadowColor = "#000b"; ctx.shadowBlur = 3;
+    let label = c.name.replace("Arch Mage ", "").replace(/[()]/g, "");
+    const maxW = r * 0.62;
+    while (ctx.measureText(label).width > maxW && label.length > 4) label = label.slice(0, -2) + "…";
+    ctx.fillText(label, r - 10, 0);
+    ctx.restore();
+  });
+}
+
+function refresh() {
+  pool = computePool();
+  canvas.style.transition = "none";
+  rotation = 0; canvas.style.transform = "rotate(0deg)";
+  drawWheel();
+  void canvas.offsetWidth; canvas.style.transition = "";
+  $("count").textContent = `${pool.length} of ${CLASSES.length} classes on the wheel`;
+  spinBtn.disabled = spinning || pool.length === 0;
+  if (!pool.length && !spinning) {
+    $("resName").textContent = "—";
+    $("resMeta").textContent = state.noRepeat && state.history.length
+      ? "Every matching class has been rolled — clear the history to start over."
+      : "No classes match the current filters.";
+  }
+}
+
+function randInt(n) {
+  const buf = new Uint32Array(1), limit = Math.floor(0x100000000 / n) * n;
+  do crypto.getRandomValues(buf); while (buf[0] >= limit);
+  return buf[0] % n;
+}
+
+function spin() {
+  if (spinning || !pool.length) return;
+  spinning = true; spinBtn.disabled = true;
+  const i = randInt(pool.length), winner = pool[i], seg = 360 / pool.length;
+  const center = (i + 0.5) * seg, jitter = (Math.random() - 0.5) * seg * 0.7;
+  rotation = Math.ceil(rotation / 360) * 360 + 360 * 6 + (360 - center) + jitter;
+  $("result").classList.remove("pop");
+  $("resName").textContent = "…"; $("resMeta").textContent = "Spinning";
+  canvas.style.transform = `rotate(${rotation}deg)`;
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  setTimeout(() => finish(winner), reduced ? 50 : 5600);
+}
+
+function finish(c) {
+  spinning = false;
+  $("resName").textContent = c.name;
+  $("resName").style.color = GROUP_COLORS[c.group];
+  $("resMeta").textContent = `${c.group} · ${c.type}`;
+  $("result").classList.add("pop");
+  state.history.unshift({ name: c.name, group: c.group });
+  state.history = state.history.slice(0, 100);
+  save(); renderHistory();
+  if (state.noRepeat) setTimeout(() => { if (!spinning) refresh(); }, 1200);
+  else spinBtn.disabled = false;
+}
+
+function renderHistory() {
+  const ul = $("history");
+  ul.innerHTML = "";
+  if (!state.history.length) { ul.innerHTML = '<li class="empty">No spins yet.</li>'; return; }
+  state.history.forEach((h, i) => {
+    const li = document.createElement("li"), b = document.createElement("span"), s = document.createElement("small");
+    b.textContent = `${state.history.length - i}. ${h.name}`; b.style.color = GROUP_COLORS[h.group];
+    s.textContent = h.group; li.append(b, s); ul.append(li);
+  });
+}
+
+function buildChips(container, keys, map, color) {
+  keys.forEach(k => {
+    const b = document.createElement("button");
+    b.className = "chip"; b.type = "button"; b.setAttribute("aria-pressed", on(map, k));
+    if (color) { const d = document.createElement("span"); d.className = "dot"; d.style.background = color[k]; b.append(d); }
+    b.append(k);
+    b.onclick = () => { if (spinning) return; map[k] = !on(map, k); b.setAttribute("aria-pressed", map[k]); save(); refresh(); };
+    container.append(b);
+  });
+}
+buildChips($("groups"), Object.keys(GROUP_COLORS), state.groups, GROUP_COLORS);
+buildChips($("types"), TYPES, state.types);
+
+document.querySelectorAll("[data-all]").forEach(btn => btn.onclick = () => {
+  if (spinning) return;
+  const isGroup = btn.dataset.all === "group";
+  const map = isGroup ? state.groups : state.types, keys = isGroup ? Object.keys(GROUP_COLORS) : TYPES;
+  const allOn = keys.every(k => on(map, k));
+  keys.forEach(k => map[k] = !allOn);
+  $(isGroup ? "groups" : "types").querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", !allOn));
+  save(); refresh();
+});
+
+$("noRepeat").checked = state.noRepeat;
+$("noRepeat").onchange = e => { state.noRepeat = e.target.checked; save(); if (!spinning) refresh(); };
+$("clear").onclick = () => { state.history = []; save(); renderHistory(); if (!spinning) refresh(); };
+spinBtn.onclick = spin;
+document.addEventListener("keydown", e => {
+  if (e.code === "Space" && !/^(BUTTON|INPUT|A)$/.test(document.activeElement.tagName)) { e.preventDefault(); spin(); }
+});
+let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { if (!spinning) drawWheel(); }, 150); });
+
+renderHistory(); refresh();
+</script>
+</body>
+</html>
