@@ -1,8 +1,8 @@
 # Maple Roulette
 
-A single-page gacha-style capsule machine that picks a random MapleStory class.
+A single-page gacha-style wish scene that picks a random MapleStory class.
 
-- Press PULL (or Space) to open a capsule and reveal a class.
+- Press WISH (or Space) to call down a glowing maple leaf and reveal a class; click the scene to skip the animation.
 - Filter by class group (Explorer, Cygnus Knights, ...) and job type.
 - Optional "no repeats" mode and a pull history, saved in your browser.
 
