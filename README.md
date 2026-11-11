@@ -13,3 +13,7 @@ It is one static file, `index.html`, with no build step. To edit the class list,
 In the repository on GitHub: **Settings → Pages → Build and deployment → Source: Deploy from a branch**, pick the branch holding `index.html` and the `/ (root)` folder, then save. The site appears at `https://zykros.github.io/Maple_roulette/` after a minute or so.
 
 Fan-made tool, not affiliated with Nexon.
+
+## Class portraits
+
+The reveal shows a job-type emoji by default. To show a portrait instead, add an image named after the class to `portraits/` (for example `portraits/night-lord.png`). The full list of file names is in `portraits/README.md`.

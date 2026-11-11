@@ -80,6 +80,8 @@
   }
   .reveal > :not(.rays) { position: relative; }
   .reveal .icon { font-size: clamp(5rem, 22vw, 7.5rem); line-height: 1.15; filter: drop-shadow(0 6px 0 #0003); }
+  .reveal .icon.has-img { font-size: 0; line-height: 0; margin-bottom: 8px; }
+  .reveal .icon img { display: block; height: clamp(170px, 32vh, 250px); max-width: 300px; object-fit: contain; }
   .reveal .name { font-size: clamp(1.9rem, 8vw, 2.9rem); font-weight: 900; line-height: 1.15; color: #fff; text-shadow: var(--stroke); text-wrap: balance; }
   .reveal .group {
     margin-top: 10px; padding: 3px 16px; border-radius: 999px; background: var(--cream); border: 3px solid var(--ink);
@@ -292,6 +294,22 @@ for (let i = 0; i < 9; i++) {
   gacha.insertBefore(l, gacha.querySelector(".hint"));
 }
 
+// Portraits are optional: drop an image named after the class into portraits/
+// (e.g. portraits/night-lord.png) and it replaces the job-type emoji.
+const slug = name => name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const portraitCache = new Map();
+function loadPortrait(c) {
+  if (!portraitCache.has(c.name)) portraitCache.set(c.name, new Promise(resolve => {
+    const exts = ["png", "webp", "jpg"];
+    (function next(i) {
+      if (i === exts.length) return resolve(null);
+      const img = new Image(), src = `portraits/${slug(c.name)}.${exts[i]}`;
+      img.onload = () => resolve(src); img.onerror = () => next(i + 1); img.src = src;
+    })(0);
+  }));
+  return portraitCache.get(c.name);
+}
+
 const on = (map, k) => map[k] !== false;
 function computePool() {
   const used = new Set(state.noRepeat ? state.history.map(h => h.name) : []);
@@ -325,6 +343,7 @@ async function pull() {
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   gacha.querySelectorAll(".spark").forEach(s => s.remove());
 
+  const portrait = Promise.race([loadPortrait(c), new Promise(r => setTimeout(r, 2500, null))]);
   setPhase("idle");
   gacha.style.setProperty("--c", GROUP_COLORS[c.group]);
   let skipped = false;
@@ -334,7 +353,10 @@ async function pull() {
   skipped = !reduced && performance.now() - t0 < FALL_MS - 50;
   if (!skipped) { setPhase("burst"); await wait(reduced ? 0 : BURST_MS); }
 
-  $("resIcon").textContent = c.type.split(" / ").map(t => TYPE_ICONS[t]).join("");
+  const src = await portrait, icon = $("resIcon");
+  icon.classList.toggle("has-img", !!src);
+  if (src) { const img = new Image(); img.src = src; img.alt = ""; icon.replaceChildren(img); }
+  else icon.textContent = c.type.split(" / ").map(t => TYPE_ICONS[t]).join("");
   $("resName").textContent = c.name;
   $("resGroup").textContent = c.group;
   $("resType").textContent = c.type;
